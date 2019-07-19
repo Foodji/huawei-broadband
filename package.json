@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "curl-request": "^1.1.1",
-    "node-getopt": "^0.3.2"
+    "node-getopt": "^0.3.2",
+    "xml2js": ""
   }
 }
