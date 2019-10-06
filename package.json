@@ -1,7 +1,7 @@
 {
   "name": "huawei-broadband",
   "description": "Huawei Broadband",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "author": "Foodji",
   "repository": "https://github.com/Foodji/huawei-broadband",
   "license": "Apache-2.0",
@@ -9,8 +9,9 @@
     "node": ""
   },
   "dependencies": {
-    "curl-request": "^1.1.1",
+    "curl-request": "https://github.com/Foodji/curl-request.git",
     "node-getopt": "^0.3.2",
+    "node-html-parser": "^1.1.16",
     "xml2js": ""
   }
 }
