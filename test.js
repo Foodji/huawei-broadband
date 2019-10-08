@@ -2,13 +2,36 @@ const CurlRequest = require("curl-request");
 const Xml2JS = require("xml2js");
 const NodeHtmlParser = require("node-html-parser");
 
+function typefy(data) {
+    switch (typeof(data)) {
+        case "object":
+            if (Array.isArray(data)) {
+                return data.map(typefy);
+            } else {
+                for (var key in data)
+                    data[key] = typefy(data[key]);
+                return data;
+            }
+        case "string":
+            if (data === "true")
+                return true;
+            if (data === "false")
+                return false;
+            if (parseInt(data, 10) + "" === data)
+                return parseInt(data, 10);
+            return data;
+        default:
+            return data;
+    }
+}
+
 function parseXml(xmlStr) {
     return new Promise(function(resolve, reject) {
-        Xml2JS.parseString(xmlStr, function (err, result) {
+        Xml2JS.parseString(xmlStr, {explicitArray : false}, function (err, result) {
             if (err)
                 reject(err);
             else
-                resolve(result);
+                resolve(typefy(result));
         });
     });
 }
@@ -23,7 +46,6 @@ function buildXml(xml) {
 function parseHtml(htmlStr) {
     return NodeHtmlParser.parse(htmlStr);
 }
-
 
 const routerIp = "192.168.0.1";
 const routerProxy = "127.0.0.1:8081";
@@ -62,6 +84,13 @@ function curlRequest(options) {
                 return request.then(function (result) {
                     return parseXml(result.body).then(function (xmlResult) {
                         result.body = xmlResult.response;
+                        try {
+                            for (var key in result.body) {
+                                var v = parseInt(result.body[key], 10);
+                                if (v + "" === result.body[key])
+                                    result.body[key] = v;
+                            }
+                        } catch (e) {}
                         return result;
                     });
                 });
@@ -130,10 +159,49 @@ function deviceControlReboot(credentials) {
     });
 }
 
+function deviceMonitoringStatus(credentials) {
+    return curlRequest({
+        method: "get",
+        path: "/api/monitoring/status",
+        credentials: credentials,
+        responseType: "xml"
+    });
+}
+
+function deviceMonitoringTrafficStatistics(credentials) {
+    return curlRequest({
+        method: "get",
+        path: "/api/monitoring/traffic-statistics",
+        credentials: credentials,
+        responseType: "xml"
+    });
+}
+
+function deviceNetCurrentPlmn(credentials) {
+    return curlRequest({
+        method: "get",
+        path: "/api/net/current-plmn",
+        credentials: credentials,
+        responseType: "xml"
+    });
+}
+
+function deviceNetPlmnList(credentials) {
+    return curlRequest({
+        method: "get",
+        path: "/api/net/plmn-list",
+        credentials: credentials,
+        responseType: "xml"
+    }).then(function (result) {
+        result.body = result.body.Networks.Network;
+        return result;
+    });
+}
+
 getWebserverSessionIdAndCSRFTokens().then(function (credentials) {
     console.log(credentials);
-    deviceControlReboot(credentials).then(function (result) {
-        console.log(result);
+    deviceMonitoringStatus(credentials).then(function (result) {
+        console.log(result.body);
     }).catch(function (err) {
         console.log(err);
     });
