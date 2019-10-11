@@ -15,7 +15,14 @@ Usage:
   node run.js [OPTION]
 
 Options:
-  -h, --help                    display this help
+      --routerip=ROUTERIP                 router ip
+      --proxy=PROXY                       proxy
+      --cmd-monitoring-status             monitoring status
+      --cmd-monitoring-traffic-statistics monitoring traffic statistics
+      --cmd-net-current-plmn              net current plmn
+      --cmd-net-plmn-list                 net plmn list
+      --cmd-control-reboot                control reboot
+  -h, --help                              display this help
 ```
 
 
