@@ -81,7 +81,7 @@ module.exports = function (options) {
             }
             curl.setBody(options.body);
         }
-        const request = curl[options.method]("http://" + routerIp + options.path);
+        const request = curl[options.method.toLowerCase()]("http://" + routerIp + options.path);
         if (options.responseType) {
             switch (options.responseType) {
                 case "xml":
@@ -161,7 +161,9 @@ module.exports = function (options) {
             method: "post",
             path: "/api/device/control",
             credentials: credentials || defaultCredentials,
-            body: {request: {Control: 1}},
+            body: {request: {
+                Control: 1
+            }},
             requestType: "xml",
             responseType: "xml"
         });
@@ -206,6 +208,65 @@ module.exports = function (options) {
         });
     }
 
+    function deviceNetRegister(credentials, plmn, rat) {
+        return curlRequest({
+            method: "post",
+            path: "/api/net/register",
+            credentials: credentials || defaultCredentials,
+            body: {request: {
+                Mode: 1,
+                Plmn: plmn,
+                Rat: rat
+            }},
+            requestType: "xml",
+            responseType: "xml"
+        });
+    }
+
+    function deviceNetModeAutomatic(credentials) {
+        return curlRequest({
+            method: "post",
+            path: "/api/net/net-mode",
+            credentials: credentials || defaultCredentials,
+            body: {request: {
+                NetworkMode: "00",
+                NetworkBand: "3FFFFFFF",
+                LTEBand: "7FFFFFFFFFFFFFFF"
+            }},
+            requestType: "xml"
+        });
+    }
+
+    async function analyzeAllNetworks() {
+        const networks = await deviceNetPlmnList(await getWebserverSessionIdAndCSRFTokens());
+        for (var i = 0; i < networks.body.length; ++i) {
+            await deviceNetRegister(await getWebserverSessionIdAndCSRFTokens(), networks.body[i].Numeric, networks.body[i].Rat);
+            networks.body[i].status = (await deviceMonitoringStatus(await getWebserverSessionIdAndCSRFTokens())).body;
+            networks.body[i].current = (await deviceNetCurrentPlmn(await getWebserverSessionIdAndCSRFTokens())).body;
+        }
+        return networks;
+    }
+
+    function analyzedNetworksFilterOnline(networks) {
+        return networks.filter(function (network) {
+            return !!network.current;
+        });
+    }
+
+    function analyzedNetworksSortByQuality(networks) {
+        return networks.sort(function (b, a) {
+            return [
+                a.status.SignalIcon - b.status.SignalIcon,
+                a.status.CurrentNetworkType - b.status.CurrentNetworkType
+            ].find(function (delta) { return delta !== 0 }) || 0;
+        });
+    }
+
+    async function connectToBestNetwork() {
+        const networks = analyzedNetworksSortByQuality(analyzedNetworksFilterOnline((await analyzeAllNetworks()).body));
+        return deviceNetRegister(await getWebserverSessionIdAndCSRFTokens(), networks[0].Numeric, networks[0].Rat);
+    }
+
     return {
         getWebserverToken: getWebserverToken,
         getWebserverSessionIdAndCSRFTokens: getWebserverSessionIdAndCSRFTokens,
@@ -213,6 +274,10 @@ module.exports = function (options) {
         deviceMonitoringStatus: deviceMonitoringStatus,
         deviceMonitoringTrafficStatistics: deviceMonitoringTrafficStatistics,
         deviceNetCurrentPlmn: deviceNetCurrentPlmn,
-        deviceNetPlmnList: deviceNetPlmnList
+        deviceNetPlmnList: deviceNetPlmnList,
+        deviceNetRegister: deviceNetRegister,
+        deviceNetModeAutomatic: deviceNetModeAutomatic,
+        analyzeAllNetworks: analyzeAllNetworks,
+        connectToBestNetwork: connectToBestNetwork
     };
 };
