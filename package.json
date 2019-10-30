@@ -1,10 +1,11 @@
 {
   "name": "huawei-broadband",
   "description": "Huawei Broadband",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "author": "Foodji",
   "repository": "https://github.com/Foodji/huawei-broadband",
   "license": "Apache-2.0",
+  "main": "lib.js",
   "engines": {
     "node": ""
   },
