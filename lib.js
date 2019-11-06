@@ -156,6 +156,12 @@ module.exports = function (options) {
         });
     }
 
+    function getUnifiedCredentials() {
+        return getWebserverSessionIdAndCSRFTokens().then(function (result) {
+            return !result.sessionId && result.csrfTokens.length === 0 ? getWebserverToken() : result;
+        });
+    }
+
     function deviceControlReboot(credentials) {
         return curlRequest({
             method: "post",
@@ -233,16 +239,17 @@ module.exports = function (options) {
                 NetworkBand: "3FFFFFFF",
                 LTEBand: "7FFFFFFFFFFFFFFF"
             }},
-            requestType: "xml"
+            requestType: "xml",
+            responseType: "xml"
         });
     }
 
     async function analyzeAllNetworks() {
-        const networks = await deviceNetPlmnList(await getWebserverSessionIdAndCSRFTokens());
+        const networks = await deviceNetPlmnList(await getUnifiedCredentials());
         for (var i = 0; i < networks.body.length; ++i) {
-            await deviceNetRegister(await getWebserverSessionIdAndCSRFTokens(), networks.body[i].Numeric, networks.body[i].Rat);
-            networks.body[i].status = (await deviceMonitoringStatus(await getWebserverSessionIdAndCSRFTokens())).body;
-            networks.body[i].current = (await deviceNetCurrentPlmn(await getWebserverSessionIdAndCSRFTokens())).body;
+            await deviceNetRegister(await getUnifiedCredentials(), networks.body[i].Numeric, networks.body[i].Rat);
+            networks.body[i].status = (await deviceMonitoringStatus(await getUnifiedCredentials())).body;
+            networks.body[i].current = (await deviceNetCurrentPlmn(await getUnifiedCredentials())).body;
         }
         return networks;
     }
@@ -264,12 +271,13 @@ module.exports = function (options) {
 
     async function connectToBestNetwork() {
         const networks = analyzedNetworksSortByQuality(analyzedNetworksFilterOnline((await analyzeAllNetworks()).body));
-        return deviceNetRegister(await getWebserverSessionIdAndCSRFTokens(), networks[0].Numeric, networks[0].Rat);
+        return deviceNetRegister(await getUnifiedCredentials(), networks[0].Numeric, networks[0].Rat);
     }
 
     return {
         getWebserverToken: getWebserverToken,
         getWebserverSessionIdAndCSRFTokens: getWebserverSessionIdAndCSRFTokens,
+        getUnifiedCredentials: getUnifiedCredentials,
         deviceControlReboot: deviceControlReboot,
         deviceMonitoringStatus: deviceMonitoringStatus,
         deviceMonitoringTrafficStatistics: deviceMonitoringTrafficStatistics,

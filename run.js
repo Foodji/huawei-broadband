@@ -27,7 +27,7 @@ const router = Lib({
 
 (async function () {
 
-    var credentials = await router.getWebserverSessionIdAndCSRFTokens();
+    var credentials = await router.getUnifiedCredentials();
     console.log("Credentials", credentials);
 
     if (opt["cmd-monitoring-status"]) {
