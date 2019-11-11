@@ -10,11 +10,12 @@ const opt = GetOpt.create([
     ["", "cmd-net-plmn-list", "net plmn list"],
     ["", "cmd-control-reboot", "control reboot"],
     ["", "cmd-net-register", "net register"],
-    ["", "cmd-net-mode-automatic", "net mode automatic"],
+    ["", "cmd-net-mode", "net mode"],
     ["", "cmd-analyze-all-networks", "analyze all networks"],
     ["", "cmd-connect-to-best-network", "connect to best network"],
     ["", "arg-rat=RAT", "net rat"],
     ["", "arg-plmn=PLMN", "net plmn"],
+    ["", "arg-net-mode=NETMODE", "net mode"],
 ]).bindHelp().parseSystem().options;
 
 const Lib = require("./lib.js");
@@ -56,13 +57,13 @@ const router = Lib({
     }
 
     if (opt["cmd-net-register"]) {
-        const netRegister = await router.deviceNetRegister(undefined, parseInt(opt['arg-plmn'], 10), parseInt(opt['arg-rat'], 10));
+        const netRegister = await router.deviceNetRegister(undefined, opt['arg-plmn'] ? parseInt(opt['arg-plmn'], 10) : undefined, opt['arg-rat'] ? parseInt(opt['arg-rat'], 10) : undefined);
         console.log("Net Register:", netRegister);
     }
 
-    if (opt["cmd-net-mode-automatic"]) {
-        const netModeAutomatic = await router.deviceNetModeAutomatic();
-        console.log("Net Mode Automatic:", netModeAutomatic);
+    if (opt["cmd-net-mode"]) {
+        const netMode = await router.deviceNetMode(undefined, opt['arg-net-mode']);
+        console.log("Net Mode:", netMode);
     }
 
     if (opt["cmd-analyze-all-networks"]) {

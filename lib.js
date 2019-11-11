@@ -202,6 +202,19 @@ module.exports = function (options) {
         });
     }
 
+    const NETWORK_STATE_STRINGS = {
+        1: "AVAILABLE",
+        2: "REGISTERED",
+        3: "FORBIDDEN"
+    };
+
+    const NETWORK_RAT_STRINGS = {
+        0: "2G",
+        2: "3G",
+        5: "H",
+        7: "4G"
+    };
+
     function deviceNetPlmnList(credentials) {
         return curlRequest({
             method: "get",
@@ -209,7 +222,11 @@ module.exports = function (options) {
             credentials: credentials || defaultCredentials,
             responseType: "xml"
         }).then(function (result) {
-            result.body = result.body.Networks.Network;
+            result.body = result.body.Networks.Network.map(function (network) {
+                network.StateString = NETWORK_STATE_STRINGS[network.State] || "UNKNOWN";
+                network.RatString = NETWORK_RAT_STRINGS[network.Rat] || "UNKNOWN";
+                return network;
+            });
             return result;
         });
     }
@@ -220,37 +237,53 @@ module.exports = function (options) {
             path: "/api/net/register",
             credentials: credentials || defaultCredentials,
             body: {request: {
-                Mode: 1,
-                Plmn: plmn,
-                Rat: rat
+                Mode: plmn || rat ? 1 : 0,
+                Plmn: plmn || "",
+                Rat: rat || ""
             }},
             requestType: "xml",
             responseType: "xml"
         });
     }
 
-    function deviceNetModeAutomatic(credentials) {
+    const NETWORK_MODES = {
+        "AUTO": "00",
+        "03": "4G",
+        "0201": "3G/2G",
+        "02": "3G",
+        "01": "2G"
+    };
+
+    function deviceNetMode(credentials, networkMode, networkBand, lteBand) {
         return curlRequest({
             method: "post",
             path: "/api/net/net-mode",
             credentials: credentials || defaultCredentials,
             body: {request: {
-                NetworkMode: "00",
-                NetworkBand: "3FFFFFFF",
-                LTEBand: "7FFFFFFFFFFFFFFF"
+                NetworkMode: networkMode || "00",
+                NetworkBand: networkBand || "3FFFFFFF",
+                LTEBand: lteBand || "7FFFFFFFFFFFFFFF"
             }},
             requestType: "xml",
             responseType: "xml"
         });
     }
 
+    function listedNetworksFilterAvailable(networks) {
+        return networks.filter(function (network) {
+            return network.State === 1;
+        });
+    }
+
     async function analyzeAllNetworks() {
         const networks = await deviceNetPlmnList(await getUnifiedCredentials());
+        networks.body = listedNetworksFilterAvailable(networks.body);
         for (var i = 0; i < networks.body.length; ++i) {
             await deviceNetRegister(await getUnifiedCredentials(), networks.body[i].Numeric, networks.body[i].Rat);
             networks.body[i].status = (await deviceMonitoringStatus(await getUnifiedCredentials())).body;
             networks.body[i].current = (await deviceNetCurrentPlmn(await getUnifiedCredentials())).body;
         }
+        await deviceNetRegister(await getUnifiedCredentials());
         return networks;
     }
 
@@ -284,7 +317,7 @@ module.exports = function (options) {
         deviceNetCurrentPlmn: deviceNetCurrentPlmn,
         deviceNetPlmnList: deviceNetPlmnList,
         deviceNetRegister: deviceNetRegister,
-        deviceNetModeAutomatic: deviceNetModeAutomatic,
+        deviceNetMode: deviceNetMode,
         analyzeAllNetworks: analyzeAllNetworks,
         connectToBestNetwork: connectToBestNetwork
     };
