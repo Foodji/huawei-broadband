@@ -307,6 +307,114 @@ module.exports = function (options) {
         return deviceNetRegister(await getUnifiedCredentials(), networks[0].Numeric, networks[0].Rat);
     }
 
+    function deviceGetDialupConnection(credentials) {
+        return curlRequest({
+            method: "get",
+            path: "/api/dialup/connection",
+            credentials: credentials || defaultCredentials,
+            responseType: "xml"
+        });
+    }
+
+    function deviceSetDialupConnection(credentials, dataRoaming, autoDisconnect) {
+        return curlRequest({
+            method: "post",
+            path: "/api/dialup/connection",
+            credentials: credentials || defaultCredentials,
+            body: {request: {
+                RoamAutoConnectEnable: dataRoaming ? 1 : 0,
+                MaxIdelTime: autoDisconnect ? 7200 : 0,
+                ConnectMode: 0,
+                MTU: 1500,
+                auto_dial_switch: 1,
+                pdp_always_on: 0,
+                max_idle_switch: autoDisconnect ? 1 : 0
+            }},
+            requestType: "xml",
+            responseType: "xml"
+        });
+    }
+
+    function deviceGetDialupProfiles(credentials) {
+        return curlRequest({
+            method: "get",
+            path: "/api/dialup/profiles",
+            credentials: credentials || defaultCredentials,
+            responseType: "xml"
+        });
+    }
+
+    function deviceCreateDialupProfile(credentials, makeDefault, profileName, apnName, userName, password) {
+        return curlRequest({
+            method: "post",
+            path: "/api/dialup/profiles",
+            credentials: credentials || defaultCredentials,
+            body: {request: {
+                'Delete' : 0,
+                'SetDefault' : makeDefault ? 0 : 1, // yes, no typo
+                'Modify' : 1,
+                'Profile' : {
+                    'Index' : '',  //original is new_index
+                    'IsValid' : 1,
+                    'Name' : profileName,
+                    'ApnIsStatic' : apnName ? 1 : 0,
+                    'ApnName' : apnName || '',
+                    'DialupNum' : '',
+                    'Username' : userName || '',
+                    'Password' : password || '',
+                    'AuthMode' : '0',
+                    'IpIsStatic' : '',
+                    'IpAddress' : '',
+                    'DnsIsStatic' : '',
+                    'PrimaryDns' : '',
+                    'SecondaryDns' : '',
+                    'ReadOnly' : '0',
+                    'iptype' : 0
+                }
+            }},
+            requestType: "xml",
+            responseType: "xml"
+        });
+    }
+
+    function deviceSetDefaultDialupProfile(credentials, profileIndex) {
+        return curlRequest({
+            method: "post",
+            path: "/api/dialup/profiles",
+            credentials: credentials || defaultCredentials,
+            body: {request: {
+                'Delete' : 0,
+                'SetDefault' : profileIndex,
+                'Modify' : 0
+            }},
+            requestType: "xml",
+            responseType: "xml"
+        });
+    }
+
+    async function upsertDialupProfile(credentials, makeDefault, profileName, apnName, userName, password) {
+        const profiles = await deviceGetDialupProfiles(credentials);
+        const currentProfile = profiles.body.CurrentProfile;
+        const matchingIndexes = [];
+        profiles.body.Profiles.Profile.forEach(function (profile, idx) {
+            if (profileName && profile.Name !== profileName)
+                return;
+            if (apnName && profile.ApnName !== apnName)
+                return;
+            if (userName && profile.Username !== userName)
+                return;
+            if (password && profile.Password !== password)
+                return;
+            matchingIndexes.push(idx + 1);
+        });
+        if (matchingIndexes.length === 0)
+            return deviceCreateDialupProfile(credentials, makeDefault, profileName, apnName, userName, password);
+        else if (makeDefault && matchingIndexes.indexOf(currentProfile) < 0)
+            return deviceSetDefaultDialupProfile(credentials, matchingIndexes[0]);
+        else
+            return profiles;
+    }
+
     return {
         getWebserverToken: getWebserverToken,
         getWebserverSessionIdAndCSRFTokens: getWebserverSessionIdAndCSRFTokens,
@@ -319,6 +427,12 @@ module.exports = function (options) {
         deviceNetRegister: deviceNetRegister,
         deviceNetMode: deviceNetMode,
         analyzeAllNetworks: analyzeAllNetworks,
-        connectToBestNetwork: connectToBestNetwork
+        connectToBestNetwork: connectToBestNetwork,
+        deviceGetDialupConnection: deviceGetDialupConnection,
+        deviceSetDialupConnection: deviceSetDialupConnection,
+        deviceGetDialupProfiles: deviceGetDialupProfiles,
+        deviceCreateDialupProfile: deviceCreateDialupProfile,
+        deviceSetDefaultDialupProfile: deviceSetDefaultDialupProfile,
+        upsertDialupProfile: upsertDialupProfile
     };
 };

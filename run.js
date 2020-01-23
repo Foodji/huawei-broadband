@@ -13,9 +13,22 @@ const opt = GetOpt.create([
     ["", "cmd-net-mode", "net mode"],
     ["", "cmd-analyze-all-networks", "analyze all networks"],
     ["", "cmd-connect-to-best-network", "connect to best network"],
+    ["", "cmd-get-dialup-connection", "get dialup connection"],
+    ["", "cmd-set-dialup-connection", "set dialup connection"],
+    ["", "cmd-get-dialup-profiles", "get dialup profiles"],
+    ["", "cmd-create-dialup-profile", "create dialup profile"],
+    ["", "cmd-set-default-dialup-profile", "set default dialup profile"],
+    ["", "cmd-upsert-dialup-profile", "upsert dialup profile"],
     ["", "arg-rat=RAT", "net rat"],
     ["", "arg-plmn=PLMN", "net plmn"],
     ["", "arg-net-mode=NETMODE", "net mode"],
+    ["", "arg-data-roaming=true/false", "set data roaming (default true)"],
+    ["", "arg-auto-disconnect=true/false", "set auto disconnect (default false)"],
+    ["", "arg-make-default=true/false", "make new profile default (default false)"],
+    ["", "arg-profile-name=PROFILENAME", "profile name"],
+    ["", "arg-apn-name=APNNAME", "apn name"],
+    ["", "arg-user-name=USERNAME", "user name"],
+    ["", "arg-password=PASSWORD", "password"],
 ]).bindHelp().parseSystem().options;
 
 const Lib = require("./lib.js");
@@ -74,6 +87,36 @@ const router = Lib({
     if (opt["cmd-connect-to-best-network"]) {
         const connectToBestNetwork = await router.connectToBestNetwork();
         console.log("Connect To Best Network:", Util.inspect(connectToBestNetwork, {depth: null}));
+    }
+
+    if (opt["cmd-get-dialup-connection"]) {
+        const getDialupConnection = await router.deviceGetDialupConnection();
+        console.log("Get Dialup Connection:", getDialupConnection);
+    }
+
+    if (opt["cmd-set-dialup-connection"]) {
+        const setDialupConnection = await router.deviceSetDialupConnection(undefined, opt['arg-data-roaming'] !== "false", opt['arg-auto-disconnect'] === "true");
+        console.log("Set Dialup Connection:", setDialupConnection);
+    }
+
+    if (opt["cmd-get-dialup-profiles"]) {
+        const getDialupProfiles = await router.deviceGetDialupProfiles();
+        console.log("Get Dialup Profiles:", getDialupProfiles);
+    }
+
+    if (opt["cmd-create-dialup-profile"]) {
+        const createDialupProfile = await router.deviceCreateDialupProfile(undefined, opt['arg-make-default'] === 'true', opt['arg-profile-name'], opt['arg-apn-name'], opt['arg-user-name'], opt['arg-password']);
+        console.log("Create Dialup Profile:", createDialupProfile);
+    }
+
+    if (opt["cmd-set-default-dialup-profile"]) {
+        const setDefaultDialupProfile = await router.deviceSetDefaultDialupProfile(undefined, parseInt(opt['arg-profile-index'], 10));
+        console.log("Set Default Dialup Profile:", setDefaultDialupProfile);
+    }
+
+    if (opt["cmd-upsert-dialup-profile"]) {
+        const upsertDialupProfile = await router.upsertDialupProfile(undefined, opt['arg-make-default'] === 'true', opt['arg-profile-name'], opt['arg-apn-name'], opt['arg-user-name'], opt['arg-password']);
+        console.log("Upsert Dialup Profile:", upsertDialupProfile);
     }
 
 })();
