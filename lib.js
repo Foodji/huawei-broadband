@@ -394,19 +394,21 @@ module.exports = function (options) {
 
     async function upsertDialupProfile(credentials, makeDefault, profileName, apnName, userName, password) {
         const profiles = await deviceGetDialupProfiles(credentials);
-        const currentProfile = profiles.body.CurrentProfile;
         const matchingIndexes = [];
-        profiles.body.Profiles.Profile.forEach(function (profile, idx) {
-            if (profileName && profile.Name !== profileName)
-                return;
-            if (apnName && profile.ApnName !== apnName)
-                return;
-            if (userName && profile.Username !== userName)
-                return;
-            if (password && profile.Password !== password)
-                return;
-            matchingIndexes.push(idx + 1);
-        });
+        try {
+            const currentProfile = profiles.body.CurrentProfile;
+            profiles.body.Profiles.Profile.forEach(function (profile, idx) {
+                if (profileName && profile.Name !== profileName)
+                    return;
+                if (apnName && profile.ApnName !== apnName)
+                    return;
+                if (userName && profile.Username !== userName)
+                    return;
+                if (password && profile.Password !== password)
+                    return;
+                matchingIndexes.push(idx + 1);
+            });
+        } catch (e) {}
         if (matchingIndexes.length === 0)
             return deviceCreateDialupProfile(credentials, makeDefault, profileName, apnName, userName, password);
         else if (makeDefault && matchingIndexes.indexOf(currentProfile) < 0)
