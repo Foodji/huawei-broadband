@@ -344,6 +344,27 @@ module.exports = function (options) {
         });
     }
 
+    function deviceGetMobileDataSwitch(credentials) {
+        return curlRequest({
+            method: "get",
+            path: "/api/dialup/mobile-dataswitch",
+            credentials: credentials || defaultCredentials,
+            responseType: "xml"
+        });
+    }
+
+    function deviceSetMobileDataSwitch(credentials, dataswitch) {
+        return curlRequest({
+            method: "post",
+            path: "/api/dialup/mobile-dataswitch",
+            credentials: credentials || defaultCredentials,
+            body: {request: { dataswitch: dataswitch ? 1 : 0}},
+            requestType: "xml",
+            responseType: "xml"
+        });
+    }
+
+
     function deviceCreateDialupProfile(credentials, makeDefault, profileName, apnName, userName, password) {
         return curlRequest({
             method: "post",
@@ -435,6 +456,8 @@ module.exports = function (options) {
         deviceGetDialupProfiles: deviceGetDialupProfiles,
         deviceCreateDialupProfile: deviceCreateDialupProfile,
         deviceSetDefaultDialupProfile: deviceSetDefaultDialupProfile,
-        upsertDialupProfile: upsertDialupProfile
+        upsertDialupProfile: upsertDialupProfile,
+        deviceGetMobileDataSwitch: deviceGetMobileDataSwitch,
+        deviceSetMobileDataSwitch: deviceSetMobileDataSwitch
     };
 };

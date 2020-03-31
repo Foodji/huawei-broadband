@@ -19,9 +19,12 @@ const opt = GetOpt.create([
     ["", "cmd-create-dialup-profile", "create dialup profile"],
     ["", "cmd-set-default-dialup-profile", "set default dialup profile"],
     ["", "cmd-upsert-dialup-profile", "upsert dialup profile"],
+    ["", "cmd-get-mobile-data-switch", "get mobile data switch"],
+    ["", "cmd-set-mobile-data-switch", "set mobile data switch"],
     ["", "arg-rat=RAT", "net rat"],
     ["", "arg-plmn=PLMN", "net plmn"],
     ["", "arg-net-mode=NETMODE", "net mode"],
+    ["", "arg-mobile-data-switch=true/false", "set mobile data switch (default true)"],
     ["", "arg-data-roaming=true/false", "set data roaming (default true)"],
     ["", "arg-auto-disconnect=true/false", "set auto disconnect (default false)"],
     ["", "arg-make-default=true/false", "make new profile default (default false)"],
@@ -117,6 +120,16 @@ const router = Lib({
     if (opt["cmd-upsert-dialup-profile"]) {
         const upsertDialupProfile = await router.upsertDialupProfile(undefined, opt['arg-make-default'] === 'true', opt['arg-profile-name'], opt['arg-apn-name'], opt['arg-user-name'], opt['arg-password']);
         console.log("Upsert Dialup Profile:", upsertDialupProfile);
+    }
+
+    if (opt["cmd-get-mobile-data-switch"]) {
+        const getMobileDataSwitch = await router.deviceGetMobileDataSwitch();
+        console.log("Get Mobile Data Switch:", getMobileDataSwitch);
+    }
+
+    if (opt["cmd-set-mobile-data-switch"]) {
+        const setMobileDataSwitch = await router.deviceSetMobileDataSwitch(undefined, opt['arg-mobile-data-switch'] !== "false");
+        console.log("Set Mobile Data Switch:", setMobileDataSwitch);
     }
 
 })();
